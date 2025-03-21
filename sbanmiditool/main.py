@@ -9,9 +9,14 @@ class SBANMidi:
             mid = mido.MidiFile(object)
 
             time = 0
+            tpb_rate = int(
+                480 / mid.ticks_per_beat
+            )  # ticks_per_beatが480以外だった時の倍率
+            print(tpb_rate)
+
             for track in mid.tracks:
                 for msg in track:
-                    time += msg.time
+                    time += msg.time * tpb_rate
                     if msg.type == "note_on":
                         self.track.append({"start": time, "note": msg.note})
                     if msg.type == "note_off":
@@ -22,7 +27,7 @@ class SBANMidi:
                                 and self.track[target]["start"] < msg2["start"]
                             ):
                                 target = i
-                        self.track[target]["stop"] = msg.time
+                        self.track[target]["stop"] = time
         elif object is None:
             pass
 
@@ -37,7 +42,6 @@ class SBANMidi:
             new_on = on.copy()
 
             for x in new_on:
-                print(x["stop"] - time)
                 if time <= x["stop"] <= msg["start"]:
                     track.append(
                         mido.Message("note_off", note=x["note"], time=x["stop"] - time)
@@ -58,7 +62,6 @@ class SBANMidi:
             )
             time = x["stop"]
             on.remove(x)
-        print(on)
 
         mid.tracks.append(track)
 
@@ -159,13 +162,28 @@ class SBANMidi:
 
         return midi
 
+    def to_morse(self, time: int = 120):
+        result = ""
+
+        pre_stop = 0
+        for msg in self.track:
+            if (msg["start"] - pre_stop) >= time:
+                result += " "
+
+            if (msg["stop"] - msg["start"]) > time:
+                result += "-"
+            else:
+                result += "."
+            pre_stop = msg["stop"]
+
+        return result
+
     def __str__(self):
         return str(self.track)
 
 
 if __name__ == "__main__":
-    mid = SBANMidi.from_tenji(
-        "⠧⠞⠓⠁⠙⠣⠳⠹⠐⠣⠟⠳⠵⠝⠕⠜⠉⠐⠕⠄⠕⠳⠐⠡⠃⠩⠑⠮⠴⠞⠉⠎⠺⠞⠖⠃⠟⠟⠾⠾⠉⠐⠗⠛⠾⠳⠶⠐⠳⠟⠹⠛⠇⠃⠎⠐⠗⠚⠉⠱⠚⠶⠐⠻"
-    )._mido()
+    mid = SBANMidi("C:\\Users\\shake\\Desktop\\untitled.mid")
 
-    mid.save("export.mid")
+    print(mid)
+    print(mid.to_morse(120))
