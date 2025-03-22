@@ -11,10 +11,20 @@ def _sorted_by_start(track: list[dict]):
 
 
 class SBANMidi:
-    def __init__(self, object=None):
+    def __init__(self, path: str | None = None):
+        """このパッケージ用のMIDIオブジェクト。
+
+        通常のMIDIでは「ノートの始まり」や「ノートの終わり」を1メッセージとするが、
+        このオブジェクトではノートを1メッセージとする。
+        また、テンポやトラック名などの細かい機能を廃止している。
+
+        Attributes:
+            path (str or None):MIDIファイルのパス
+        """
+
         self.track = []
-        if type(object) == str:
-            mid = mido.MidiFile(object)
+        if type(path) == str:
+            mid = mido.MidiFile(path)
 
             time = 0
             tpb_rate = int(
@@ -80,11 +90,26 @@ class SBANMidi:
 
         return mid
 
-    def save(self, path) -> None:
+    def save(self, path: str):
+        """MIDIファイルとして保存する。
+
+        Args:
+            path (str): 出力するMIDIファイルのパス
+        """
         self._mido().save(path)
 
     @staticmethod
     def from_number(numbers: str, time: int = 120) -> "SBANMidi":
+        """数字をSBANMidiに変換する。
+
+        Args:
+            numbers (str): 36進数までの数字
+            time (int): 1音の長さ
+
+        Returns:
+            SBANMidi
+        """
+
         midi = SBANMidi()
         current = 0
         print(list(numbers))
@@ -117,6 +142,19 @@ class SBANMidi:
         dah: tuple = ("-", "_", "ー"),
         space: tuple = (" ", "　"),
     ) -> "SBANMidi":
+        """モールス文をSBANMidiに変換する。
+
+        Args:
+            morse (str): モールス信号のテキスト
+            time (int): 点あたりのノートの長さ
+            dit (tuple): 点にあたる文字のタプル
+            dah (tuple): 線にあたる文字のタプル
+            space (tuple): スペースにあたる文字のタプル
+
+        Returns:
+            SBANMidi
+        """
+
         midi = SBANMidi()
         current = 0
         for x in list(morse):
@@ -139,6 +177,16 @@ class SBANMidi:
 
     @staticmethod
     def from_tenji(tenji: str, time: int = 120) -> "SBANMidi":
+        """点字テキストをSBANMidiに変換
+
+        Args:
+            tenji (str): 点字のテキスト(漢点字には未対応)
+            time (int): 1音の長さ
+
+        Returns:
+            SBANMidi
+        """
+
         midi = SBANMidi()
 
         pattern = re.compile(r"[⠀-⠿]")
@@ -181,7 +229,16 @@ class SBANMidi:
 
         return midi
 
-    def to_morse(self, time: int = 120) -> "SBANMidi":
+    def to_morse(self, time: int = 120) -> str:
+        """SBANMidiをモールス信号に変換
+
+        Args:
+            time (int): 基準になる長さ(これより長いノートは線、そうでないノートは点、これより長い空白はスペースになる)
+
+        Returns:
+            str: "."、"-"、" "で表されたモールス文
+        """
+
         result = ""
 
         pre_stop = 0
@@ -197,7 +254,17 @@ class SBANMidi:
 
         return result
 
-    def to_image(self, path: str, ticks_per_dot: int = 80, mode: int = 0) -> None:
+    def to_image(self, path: str, ticks_per_dot: int = 80, mode: int = 0):
+        """SBANMidiを画像に変換して出力する。
+
+        ファイル名は日付になる。
+
+        Args:
+            path (str): 出力するフォルダのパス
+            ticks_per_dot (int): 1ドットあたりのティック数
+            mode (int): 0の場合結果の画像のみ、1の場合経過画像、2の場合ヤツメ式の経過画像
+        """
+
         im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
         im = Image.new("RGBA", (im_length, 128))
         draw = ImageDraw.Draw(im)
