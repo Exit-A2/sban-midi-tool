@@ -30,7 +30,6 @@ class SBANMidi:
             tpb_rate = int(
                 480 / mid.ticks_per_beat
             )  # ticks_per_beatが480以外だった時の倍率
-            print(tpb_rate)
 
             for track in mid.tracks:
                 for msg in track:
@@ -39,7 +38,7 @@ class SBANMidi:
                     if msg.type == "note_off" or (
                         msg.type == "note_on" and msg.velocity == 0
                     ):
-                        target = 0
+                        target = None
                         for i, msg2 in enumerate(self.track):
                             if (
                                 msg2["note"] == msg.note
@@ -112,7 +111,6 @@ class SBANMidi:
 
         midi = SBANMidi()
         current = 0
-        print(list(numbers))
 
         for x in list(numbers):
             if x.isdecimal():
@@ -269,7 +267,7 @@ class SBANMidi:
         im = Image.new("RGBA", (im_length, 128))
         draw = ImageDraw.Draw(im)
 
-        today = datetime.today()
+        today = str(datetime.date(datetime.today()))
 
         directory = Path(path)
         if not directory.is_dir():
@@ -282,8 +280,14 @@ class SBANMidi:
                 draw2 = ImageDraw.Draw(im2)
 
             x1 = math.floor(msg["start"] / ticks_per_dot)
-            x2 = math.floor(msg["stop"] / ticks_per_dot)
+            x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
             y = 127 - msg["note"]
+
+            if x2 < x1:
+                x2 = x1
+
+            print("start", msg["start"])
+
             draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
 
             if mode == 1:
@@ -303,4 +307,5 @@ if __name__ == "__main__":
     mid = SBANMidi("C:\\Users\\shake\\Desktop\\untitled.mid")
 
     print(mid)
-    print(mid.to_morse(120))
+
+    mid.to_image("", 20)
