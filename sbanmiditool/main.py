@@ -1,5 +1,13 @@
 import mido
 import re
+from PIL import Image, ImageDraw
+import math
+from pathlib import Path
+from datetime import datetime
+
+
+def _sorted_by_start(track: list[dict]):
+    return sorted(track, key=lambda x: x["start"])
 
 
 class SBANMidi:
@@ -17,9 +25,10 @@ class SBANMidi:
             for track in mid.tracks:
                 for msg in track:
                     time += msg.time * tpb_rate
-                    if msg.type == "note_on":
-                        self.track.append({"start": time, "note": msg.note})
-                    if msg.type == "note_off":
+
+                    if msg.type == "note_off" or (
+                        msg.type == "note_on" and msg.velocity == 0
+                    ):
                         target = 0
                         for i, msg2 in enumerate(self.track):
                             if (
@@ -28,8 +37,12 @@ class SBANMidi:
                             ):
                                 target = i
                         self.track[target]["stop"] = time
+                    elif msg.type == "note_on":
+                        self.track.append({"start": time, "note": msg.note})
         elif object is None:
             pass
+
+        self.track = _sorted_by_start(self.track)
 
     def _mido(self) -> mido.MidiFile:
         mid = mido.MidiFile()
@@ -67,11 +80,11 @@ class SBANMidi:
 
         return mid
 
-    def save(self, path):
+    def save(self, path) -> None:
         self._mido().save(path)
 
     @staticmethod
-    def from_number(numbers: str, time: int = 120):
+    def from_number(numbers: str, time: int = 120) -> "SBANMidi":
         midi = SBANMidi()
         current = 0
         print(list(numbers))
@@ -92,6 +105,8 @@ class SBANMidi:
                 )
                 current += time
 
+        midi.track = _sorted_by_start(midi.track)
+
         return midi
 
     @staticmethod
@@ -101,7 +116,7 @@ class SBANMidi:
         dit: tuple = (".", "・"),
         dah: tuple = ("-", "_", "ー"),
         space: tuple = (" ", "　"),
-    ):
+    ) -> "SBANMidi":
         midi = SBANMidi()
         current = 0
         for x in list(morse):
@@ -118,10 +133,12 @@ class SBANMidi:
             elif x in space:
                 current += time
 
+        midi.track = _sorted_by_start(midi.track)
+
         return midi
 
     @staticmethod
-    def from_tenji(tenji: str, time: int = 120):
+    def from_tenji(tenji: str, time: int = 120) -> "SBANMidi":
         midi = SBANMidi()
 
         pattern = re.compile(r"[⠀-⠿]")
@@ -160,9 +177,11 @@ class SBANMidi:
 
             current += time * 2
 
+        midi.track = _sorted_by_start(midi.track)
+
         return midi
 
-    def to_morse(self, time: int = 120):
+    def to_morse(self, time: int = 120) -> "SBANMidi":
         result = ""
 
         pre_stop = 0
@@ -177,6 +196,37 @@ class SBANMidi:
             pre_stop = msg["stop"]
 
         return result
+
+    def to_image(self, path: str, ticks_per_dot: int = 80, mode: int = 0) -> None:
+        im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
+        im = Image.new("RGBA", (im_length, 128))
+        draw = ImageDraw.Draw(im)
+
+        today = datetime.today()
+
+        directory = Path(path)
+        if not directory.is_dir():
+            raise ValueError
+
+        index = 0
+        for msg in self.track:
+            if mode == 2:
+                im2 = Image.new("RGBA", (im_length, 128))
+                draw2 = ImageDraw.Draw(im2)
+
+            x1 = math.floor(msg["start"] / ticks_per_dot)
+            x2 = math.floor(msg["stop"] / ticks_per_dot)
+            y = 127 - msg["note"]
+            draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+
+            if mode == 1:
+                im.save(str(directory / f"{today}-{index}.png"))
+            elif mode == 2:
+                draw2.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+                im2.save(str(directory / f"{today}-{index}.png"))
+            index += 1
+
+        im.save(str(directory / f"{today}.png"))
 
     def __str__(self):
         return str(self.track)
