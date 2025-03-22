@@ -2,4 +2,7 @@
 .vscode
 *.mid
 *.png
-test
+example
+__pycache__
+build
+*.egg-info

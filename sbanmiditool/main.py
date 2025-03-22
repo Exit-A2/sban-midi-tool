@@ -286,8 +286,6 @@ class SBANMidi:
                 if x2 < x1:
                     x2 = x1
 
-                print("start", msg["start"])
-
                 draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
         elif mode == 1 or mode == 2:
             time = 0
