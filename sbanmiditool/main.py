@@ -40,10 +40,7 @@ class SBANMidi:
                     ):
                         target = None
                         for i, msg2 in enumerate(self.track):
-                            if (
-                                msg2["note"] == msg.note
-                                and self.track[target]["start"] < msg2["start"]
-                            ):
+                            if msg2["note"] == msg.note and not ("stop" in msg2):
                                 target = i
                         self.track[target]["stop"] = time
                     elif msg.type == "note_on":
