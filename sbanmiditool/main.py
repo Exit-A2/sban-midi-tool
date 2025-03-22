@@ -7,10 +7,6 @@ from datetime import datetime
 import copy
 
 
-def _sorted_by_start(track: list[dict]):
-    return sorted(track, key=lambda x: x["start"])
-
-
 def _lists_match(l1, l2):
     if len(l1) != len(l2):
         return False
@@ -18,6 +14,10 @@ def _lists_match(l1, l2):
 
 
 class SBANMidi:
+    def _clean(self):
+        self.track = sorted(self.track, key=lambda x: x["start"])
+        self.max_stop = max([msg["stop"] for msg in self.track])
+
     def __init__(self, path: str | None = None):
         """このパッケージ用のMIDIオブジェクト。
 
@@ -55,7 +55,7 @@ class SBANMidi:
         elif object is None:
             pass
 
-        self.track = _sorted_by_start(self.track)
+        self._clean()
 
     def _mido(self) -> mido.MidiFile:
         mid = mido.MidiFile()
@@ -132,7 +132,7 @@ class SBANMidi:
                 )
                 current += time
 
-        midi.track = _sorted_by_start(midi.track)
+        midi._clean()
 
         return midi
 
@@ -173,7 +173,7 @@ class SBANMidi:
             elif x in space:
                 current += time
 
-        midi.track = _sorted_by_start(midi.track)
+        midi._clean()
 
         return midi
 
@@ -227,7 +227,7 @@ class SBANMidi:
 
             current += time * 2
 
-        midi.track = _sorted_by_start(midi.track)
+        midi._clean()
 
         return midi
 
@@ -315,7 +315,7 @@ class SBANMidi:
             msg["start"] = max_stop - pre_stop
             msg["stop"] = max_stop - pre_start
 
-        _sorted_by_start(self.track)
+        self._clean()
 
     def __str__(self):
         return str(self.track)
