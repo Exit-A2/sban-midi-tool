@@ -306,6 +306,17 @@ class SBANMidi:
 
         im.save(str(directory / f"{today}.png"))
 
+    def reverse(self):
+        max_stop = max([msg["stop"] for msg in self.track])
+        for msg in self.track:
+            pre_start = msg["start"]
+            pre_stop = msg["stop"]
+
+            msg["start"] = max_stop - pre_stop
+            msg["stop"] = max_stop - pre_start
+
+        _sorted_by_start(self.track)
+
     def __str__(self):
         return str(self.track)
 
