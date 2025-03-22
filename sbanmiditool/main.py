@@ -4,10 +4,17 @@ from PIL import Image, ImageDraw
 import math
 from pathlib import Path
 from datetime import datetime
+import copy
 
 
 def _sorted_by_start(track: list[dict]):
     return sorted(track, key=lambda x: x["start"])
+
+
+def _lists_match(l1, l2):
+    if len(l1) != len(l2):
+        return False
+    return all(x == y and type(x) == type(y) for x, y in zip(l1, l2))
 
 
 class SBANMidi:
@@ -270,29 +277,32 @@ class SBANMidi:
         if not directory.is_dir():
             raise ValueError
 
-        index = 0
-        for msg in self.track:
-            if mode == 2:
-                im2 = Image.new("RGBA", (im_length, 128))
-                draw2 = ImageDraw.Draw(im2)
+        if mode == 0:
+            for msg in self.track:
+                x1 = math.floor(msg["start"] / ticks_per_dot)
+                x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
+                y = 127 - msg["note"]
 
-            x1 = math.floor(msg["start"] / ticks_per_dot)
-            x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
-            y = 127 - msg["note"]
+                if x2 < x1:
+                    x2 = x1
 
-            if x2 < x1:
-                x2 = x1
+                print("start", msg["start"])
 
-            print("start", msg["start"])
+                draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+        elif mode == 1 or mode == 2:
+            time = 0
+            max_stop = max([msg["stop"] for msg in self.track])
+            pre_msgs = []
 
-            draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+            for time in range(len(max_stop) + 1):
+                current_msgs = [
+                    msg for msg in self.track if msg["start"] <= time < msg["stop"]
+                ]
 
-            if mode == 1:
-                im.save(str(directory / f"{today}-{index}.png"))
-            elif mode == 2:
-                draw2.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
-                im2.save(str(directory / f"{today}-{index}.png"))
-            index += 1
+                if not _lists_match(pre_msgs, current_msgs):
+                    pass  # あとでかく
+
+                pre_msgs = copy.deepcopy(current_msgs)
 
         im.save(str(directory / f"{today}.png"))
 
@@ -305,4 +315,4 @@ if __name__ == "__main__":
 
     print(mid)
 
-    mid.to_image("", 20)
+    mid.to_image("", 20, 1)
