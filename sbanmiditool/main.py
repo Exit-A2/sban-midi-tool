@@ -305,6 +305,8 @@ class SBANMidi:
         im.save(str(directory / f"{today}.png"))
 
     def reverse(self):
+        """MIDIを破壊的に反転します"""
+
         max_stop = max([msg["stop"] for msg in self.track])
         for msg in self.track:
             pre_start = msg["start"]
