@@ -274,7 +274,7 @@ class SBANMidi:
         today = str(datetime.date(datetime.today()))
 
         directory = Path(path)
-        if not directory.is_dir():
+        if not directory.is_dir():  # pathがディレクトリでは無かった場合
             raise ValueError
 
         if mode == 0:
@@ -289,10 +289,9 @@ class SBANMidi:
                 draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
         elif mode == 1 or mode == 2:
             time = 0
-            max_stop = max([msg["stop"] for msg in self.track])
             pre_msgs = []
 
-            for time in range(len(max_stop) + 1):
+            for time in range(len(self.max_stop) + 1):
                 current_msgs = [
                     msg for msg in self.track if msg["start"] <= time < msg["stop"]
                 ]
