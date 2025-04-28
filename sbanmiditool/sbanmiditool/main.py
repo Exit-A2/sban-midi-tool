@@ -258,7 +258,7 @@ class SBANMidi:
         Args:
             path (str): 出力するフォルダのパス
             ticks_per_dot (int): 1ドットあたりのティック数
-            progress (int): 0の場合結果の画像のみ、1の場合経過画像、2の場合ヤツメ式の経過画像
+            progress (str): noneの場合結果の画像のみ、lineの場合経過画像、pointの場合ヤツメ式の経過画像
         """
 
         im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
