@@ -1,7 +1,5 @@
-
 .vscode
 *.mid
-*.png
 example
 __pycache__
 build

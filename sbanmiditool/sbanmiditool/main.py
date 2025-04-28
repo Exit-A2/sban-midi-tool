@@ -7,12 +7,6 @@ from datetime import datetime
 import copy
 
 
-def _lists_match(l1, l2):
-    if len(l1) != len(l2):
-        return False
-    return all(x == y and type(x) == type(y) for x, y in zip(l1, l2))
-
-
 class SBANMidi:
     def _clean(self):
         self.track = sorted(self.track, key=lambda x: x["start"])
@@ -256,7 +250,7 @@ class SBANMidi:
 
         return result
 
-    def to_image(self, path: str, ticks_per_dot: int = 80, mode: int = 0):
+    def to_image(self, path: str, ticks_per_dot: int = 80, progress: str = "none"):
         """SBANMidiを画像に変換して出力する。
 
         ファイル名は日付になる。
@@ -264,7 +258,7 @@ class SBANMidi:
         Args:
             path (str): 出力するフォルダのパス
             ticks_per_dot (int): 1ドットあたりのティック数
-            mode (int): 0の場合結果の画像のみ、1の場合経過画像、2の場合ヤツメ式の経過画像
+            progress (int): 0の場合結果の画像のみ、1の場合経過画像、2の場合ヤツメ式の経過画像
         """
 
         im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
@@ -277,7 +271,7 @@ class SBANMidi:
         if not directory.is_dir():  # pathがディレクトリでは無かった場合
             raise ValueError
 
-        if mode == 0:
+        if progress == "none":
             for msg in self.track:
                 x1 = math.floor(msg["start"] / ticks_per_dot)
                 x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
@@ -287,21 +281,54 @@ class SBANMidi:
                     x2 = x1
 
                 draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
-        elif mode == 1 or mode == 2:
-            time = 0
-            pre_msgs = []
 
-            for time in range(len(self.max_stop) + 1):
+            im.save(str(directory / f"{today}.png"))
+
+        elif progress == "line" or progress == "point":
+            time = 0
+            pre_msgs = {}
+            file_num = 0
+
+            for time in range(self.max_stop + 1):
                 current_msgs = [
                     msg for msg in self.track if msg["start"] <= time < msg["stop"]
                 ]
+                current_notes = {msg["note"] for msg in current_msgs}
+                current_starts = {msg["start"] for msg in current_msgs}
+                current_stops = {msg["stop"] for msg in current_msgs}
+                pre_notes = {msg["note"] for msg in pre_msgs}
+                pre_starts = {msg["start"] for msg in pre_msgs}
+                pre_stops = {msg["stop"] for msg in pre_msgs}
 
-                if not _lists_match(pre_msgs, current_msgs):
-                    pass  # あとでかく
+                if (
+                    not (
+                        current_notes == pre_notes
+                        and current_starts == pre_starts
+                        and current_stops == pre_stops
+                    )
+                    and current_notes
+                ):  # なっている音が前と違い、かつ1つ以上音が鳴っている
+                    if progress == "line":
+                        target_msgs = [
+                            msg for msg in self.track if msg["start"] <= time
+                        ]
+                    elif progress == "point":
+                        target_msgs = copy.deepcopy(current_msgs)
+                    new_im = Image.new("RGBA", (im_length, 128))
+                    new_draw = ImageDraw.Draw(new_im)
+                    for msg in target_msgs:
+                        x1 = math.floor(msg["start"] / ticks_per_dot)
+                        x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
+                        y = 127 - msg["note"]
+
+                        if x2 < x1:
+                            x2 = x1
+
+                        new_draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+                    new_im.save(str(directory / f"{today}-{file_num}.png"))
+                    file_num += 1
 
                 pre_msgs = copy.deepcopy(current_msgs)
-
-        im.save(str(directory / f"{today}.png"))
 
     def reverse(self):
         """MIDIを破壊的に反転します"""
@@ -318,11 +345,3 @@ class SBANMidi:
 
     def __str__(self):
         return str(self.track)
-
-
-if __name__ == "__main__":
-    mid = SBANMidi("C:\\Users\\shake\\Desktop\\untitled.mid")
-
-    print(mid)
-
-    mid.to_image("", 20, 1)
