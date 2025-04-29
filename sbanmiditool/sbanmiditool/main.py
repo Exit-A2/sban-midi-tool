@@ -87,6 +87,21 @@ class SBANMidi:
 
         return mid
 
+    def _draw_messages(self, messages: list[dict], width, ticks_per_dot):
+        im = Image.new("RGBA", (width, 128))
+        draw = ImageDraw.Draw(im)
+        for msg in messages:
+            x1 = math.floor(msg["start"] / ticks_per_dot)
+            x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
+            y = 127 - msg["note"]
+
+            if x2 < x1:
+                x2 = x1
+
+            draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+
+        return im
+
     def save(self, path: str):
         """MIDIファイルとして保存する。
 
@@ -189,21 +204,6 @@ class SBANMidi:
                     file_num += 1
 
                 pre_msgs = copy.deepcopy(current_msgs)
-
-    def _draw_messages(self, messages: list[dict], width, ticks_per_dot):
-        im = Image.new("RGBA", (width, 128))
-        draw = ImageDraw.Draw(im)
-        for msg in messages:
-            x1 = math.floor(msg["start"] / ticks_per_dot)
-            x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
-            y = 127 - msg["note"]
-
-            if x2 < x1:
-                x2 = x1
-
-            draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
-
-        return im
 
     def to_gif(self, path: str, ticks_per_dot: int = 80, progress: str = "point"):
         """SBAMidiをGIFに変換して出力する。
