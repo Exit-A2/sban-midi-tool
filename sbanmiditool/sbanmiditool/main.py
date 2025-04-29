@@ -95,136 +95,6 @@ class SBANMidi:
         """
         self._mido().save(path)
 
-    @staticmethod
-    def from_number(numbers: str, time: int = 120) -> "SBANMidi":
-        """数字をSBANMidiに変換する。
-
-        Args:
-            numbers (str): 36進数までの数字
-            time (int): 1音の長さ
-
-        Returns:
-            SBANMidi
-        """
-
-        midi = SBANMidi()
-        current = 0
-
-        for x in list(numbers):
-            if x.isdecimal():
-                midi.track.append(
-                    {"start": current, "stop": current + time, "note": int(x)}
-                )
-                current += time
-            elif x.isascii() and x.isalpha():
-                midi.track.append(
-                    {
-                        "start": current,
-                        "stop": current + time,
-                        "note": ord(x.upper()) - 55 + 60,
-                    }
-                )
-                current += time
-
-        midi._clean()
-
-        return midi
-
-    @staticmethod
-    def from_morse(
-        morse: str,
-        time: int = 120,
-        dit: tuple = (".", "・"),
-        dah: tuple = ("-", "_", "ー"),
-        space: tuple = (" ", "　"),
-    ) -> "SBANMidi":
-        """モールス文をSBANMidiに変換する。
-
-        Args:
-            morse (str): モールス信号のテキスト
-            time (int): 点あたりのノートの長さ
-            dit (tuple): 点にあたる文字のタプル
-            dah (tuple): 線にあたる文字のタプル
-            space (tuple): スペースにあたる文字のタプル
-
-        Returns:
-            SBANMidi
-        """
-
-        midi = SBANMidi()
-        current = 0
-        for x in list(morse):
-            if x in dit:
-                midi.track.append(
-                    {"start": current, "stop": current + time, "note": 60}
-                )
-                current += time
-            elif x in dah:
-                midi.track.append(
-                    {"start": current, "stop": current + time * 2, "note": 60}
-                )
-                current += time * 2
-            elif x in space:
-                current += time
-
-        midi._clean()
-
-        return midi
-
-    @staticmethod
-    def from_tenji(tenji: str, time: int = 120) -> "SBANMidi":
-        """点字テキストをSBANMidiに変換
-
-        Args:
-            tenji (str): 点字のテキスト(漢点字には未対応)
-            time (int): 1音の長さ
-
-        Returns:
-            SBANMidi
-        """
-
-        midi = SBANMidi()
-
-        pattern = re.compile(r"[⠀-⠿]")
-        valid_tenji = [x for x in list(tenji) if pattern.match(x)]
-
-        tenji_num = [int(x.encode("utf-8").hex(), 16) - 14852224 for x in valid_tenji]
-
-        bin_tenji = [bin(x)[2:].zfill(6) for x in tenji_num]
-
-        current = 0
-        for x in bin_tenji:
-            if x[5] == "1":
-                midi.track.append(
-                    {"start": current, "stop": current + time, "note": 62}
-                )
-            if x[4] == "1":
-                midi.track.append(
-                    {"start": current, "stop": current + time, "note": 61}
-                )
-            if x[3] == "1":
-                midi.track.append(
-                    {"start": current, "stop": current + time, "note": 60}
-                )
-            if x[2] == "1":
-                midi.track.append(
-                    {"start": current + time, "stop": current + time * 2, "note": 62}
-                )
-            if x[1] == "1":
-                midi.track.append(
-                    {"start": current + time, "stop": current + time * 2, "note": 61}
-                )
-            if x[0] == "1":
-                midi.track.append(
-                    {"start": current + time, "stop": current + time * 2, "note": 60}
-                )
-
-            current += time * 2
-
-        midi._clean()
-
-        return midi
-
     def to_morse(self, time: int = 120) -> str:
         """SBANMidiをモールス信号に変換
 
@@ -384,3 +254,125 @@ class SBANMidi:
 
     def __str__(self):
         return str(self.track)
+
+
+def from_number(numbers: str, time: int = 120) -> SBANMidi:
+    """数字をSBANMidiに変換する。
+
+    Args:
+        numbers (str): 36進数までの数字
+        time (int): 1音の長さ
+
+    Returns:
+        SBANMidi
+    """
+
+    midi = SBANMidi()
+    current = 0
+
+    for x in list(numbers):
+        if x.isdecimal():
+            midi.track.append(
+                {"start": current, "stop": current + time, "note": int(x)}
+            )
+            current += time
+        elif x.isascii() and x.isalpha():
+            midi.track.append(
+                {
+                    "start": current,
+                    "stop": current + time,
+                    "note": ord(x.upper()) - 55 + 60,
+                }
+            )
+            current += time
+
+    midi._clean()
+
+    return midi
+
+
+def from_morse(
+    morse: str,
+    time: int = 120,
+    dit: tuple = (".", "・"),
+    dah: tuple = ("-", "_", "ー"),
+    space: tuple = (" ", "　"),
+) -> SBANMidi:
+    """モールス文をSBANMidiに変換する。
+
+    Args:
+        morse (str): モールス信号のテキスト
+        time (int): 点あたりのノートの長さ
+        dit (tuple): 点にあたる文字のタプル
+        dah (tuple): 線にあたる文字のタプル
+        space (tuple): スペースにあたる文字のタプル
+
+    Returns:
+        SBANMidi
+    """
+
+    midi = SBANMidi()
+    current = 0
+    for x in list(morse):
+        if x in dit:
+            midi.track.append({"start": current, "stop": current + time, "note": 60})
+            current += time
+        elif x in dah:
+            midi.track.append(
+                {"start": current, "stop": current + time * 2, "note": 60}
+            )
+            current += time * 2
+        elif x in space:
+            current += time
+
+    midi._clean()
+
+    return midi
+
+
+def from_tenji(tenji: str, time: int = 120) -> "SBANMidi":
+    """点字テキストをSBANMidiに変換
+
+    Args:
+        tenji (str): 点字のテキスト(漢点字には未対応)
+        time (int): 1音の長さ
+
+    Returns:
+        SBANMidi
+    """
+
+    midi = SBANMidi()
+
+    pattern = re.compile(r"[⠀-⠿]")
+    valid_tenji = [x for x in list(tenji) if pattern.match(x)]
+
+    tenji_num = [int(x.encode("utf-8").hex(), 16) - 14852224 for x in valid_tenji]
+
+    bin_tenji = [bin(x)[2:].zfill(6) for x in tenji_num]
+
+    current = 0
+    for x in bin_tenji:
+        if x[5] == "1":
+            midi.track.append({"start": current, "stop": current + time, "note": 62})
+        if x[4] == "1":
+            midi.track.append({"start": current, "stop": current + time, "note": 61})
+        if x[3] == "1":
+            midi.track.append({"start": current, "stop": current + time, "note": 60})
+        if x[2] == "1":
+            midi.track.append(
+                {"start": current + time, "stop": current + time * 2, "note": 62}
+            )
+        if x[1] == "1":
+            midi.track.append(
+                {"start": current + time, "stop": current + time * 2, "note": 61}
+            )
+        if x[0] == "1":
+            midi.track.append(
+                {"start": current + time, "stop": current + time * 2, "note": 60}
+            )
+
+        current += time * 2
+
+    midi._clean()
+
+    return midi
