@@ -347,9 +347,27 @@ class SBANMidi:
 
         im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
         time = 0
+        images = []
 
         while time < self.max_stop:
+            if progress == "point":
+                target_msgs = [
+                    msg for msg in self.track if msg["start"] <= time < msg["stop"]
+                ]
+            elif progress == "line":
+                target_msgs = [msg for msg in self.track if msg["start"] <= time]
+
+            images.append(self._draw_messages(target_msgs, im_length, ticks_per_dot))
+
             time += ticks_per_dot
+
+        if 2 <= len(images):
+            SECOND_PER_BEAT = 600  # 100BPMのとき1拍あたりのミリ秒数
+            duration = SECOND_PER_BEAT / (480 / ticks_per_dot)
+
+            images[0].save(
+                path, duration=duration, save_all=True, append_images=images[1:]
+            )
 
     def reverse(self):
         """MIDIを破壊的に反転します"""
