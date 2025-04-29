@@ -314,21 +314,42 @@ class SBANMidi:
                         ]
                     elif progress == "point":
                         target_msgs = copy.deepcopy(current_msgs)
-                    new_im = Image.new("RGBA", (im_length, 128))
-                    new_draw = ImageDraw.Draw(new_im)
-                    for msg in target_msgs:
-                        x1 = math.floor(msg["start"] / ticks_per_dot)
-                        x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
-                        y = 127 - msg["note"]
-
-                        if x2 < x1:
-                            x2 = x1
-
-                        new_draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
-                    new_im.save(str(directory / f"{today}-{file_num}.png"))
+                    now_im = self._draw_messages(target_msgs, im_length, ticks_per_dot)
+                    now_im.save(str(directory / f"{today}-{file_num}.png"))
                     file_num += 1
 
                 pre_msgs = copy.deepcopy(current_msgs)
+
+    def _draw_messages(self, messages: list[dict], width, ticks_per_dot):
+        im = Image.new("RGBA", (width, 128))
+        draw = ImageDraw.Draw(im)
+        for msg in messages:
+            x1 = math.floor(msg["start"] / ticks_per_dot)
+            x2 = math.floor(msg["stop"] / ticks_per_dot) - 1
+            y = 127 - msg["note"]
+
+            if x2 < x1:
+                x2 = x1
+
+            draw.rectangle(xy=(x1, y, x2, y), fill=(255, 255, 255))
+
+        return im
+
+    def to_gif(self, path: str, ticks_per_dot: int = 80, progress: str = "point"):
+        """SBAMidiをGIFに変換して出力する。
+
+        100BPM固定。
+
+        Args:
+            path(str):出力するGIFのパス
+            progress(str):lineの場合経過画像、pointの場合ヤツメ式の経過画像
+        """
+
+        im_length = int(max([x["stop"] for x in self.track]) / ticks_per_dot)
+        time = 0
+
+        while time < self.max_stop:
+            time += ticks_per_dot
 
     def reverse(self):
         """MIDIを破壊的に反転します"""
