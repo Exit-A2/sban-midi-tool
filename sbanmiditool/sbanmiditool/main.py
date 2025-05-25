@@ -10,7 +10,10 @@ import copy
 class SBANMidi:
     def _clean(self):
         self.track = sorted(self.track, key=lambda x: x["start"])
-        self.max_stop = max([msg["stop"] for msg in self.track])
+        if self.track:
+            self.max_stop = max([msg["stop"] for msg in self.track])
+        else:
+            self.max_stop = 0
 
     def __init__(self, path: str | None = None):
         """このパッケージ用のMIDIオブジェクト。
