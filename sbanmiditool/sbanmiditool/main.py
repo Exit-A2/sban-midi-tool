@@ -91,7 +91,7 @@ class SBANMidi:
         return mid
 
     def _draw_messages(self, messages: list[dict], width, ticks_per_dot):
-        im = Image.new("RGBA", (width, 128))
+        im = Image.new("RGBA", (width, 128), (0, 0, 0, 100))
         draw = ImageDraw.Draw(im)
         for msg in messages:
             x1 = math.floor(msg["start"] / ticks_per_dot)
