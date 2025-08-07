@@ -114,7 +114,7 @@ class SBANMidi:
         self._mido().save(path)
 
     def to_morse(self, time: int = 120) -> str:
-        """SBANMidiをモールス信号に変換
+        """SBANMidiをモールス信号に変換(つまり解読)
 
         Args:
             time (int): 基準になる長さ(これより長いノートは線、そうでないノートは点、これより長い空白はスペースになる)
@@ -243,7 +243,7 @@ class SBANMidi:
             )
 
     def reverse(self):
-        """MIDIを破壊的に反転します"""
+        """MIDIを破壊的に反転する。"""
 
         max_stop = max([msg["stop"] for msg in self.track])
         for msg in self.track:
@@ -334,7 +334,7 @@ def from_morse(
 
 
 def from_tenji(tenji: str, time: int = 120) -> "SBANMidi":
-    """点字テキストをSBANMidiに変換
+    """点字テキストをSBANMidiに変換する。
 
     Args:
         tenji (str): 点字のテキスト(漢点字には未対応)
